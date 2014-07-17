@@ -1,0 +1,206 @@
+{"top":0, "left":0, "center": "auto", "notes": 12345, "sizing_slide": true}
+===
+I "Promise" to be Backward Compatible
+---
+{bold}Hello!{/bold}
+---
+{bold}Who's this?{/bold}
+---
+Bryan English
+{pause}
+@bengl
+{pause}
+http://bryanenglish.com
+---
+   ⣀⣀⣀⣀⣀                 ⣠⡄
+   ⠛⣿⣿⠛⠿⣿⣦⣄       ⢰⣷⡀   ⢸⣿⡇ ⢰⣷⡀
+ ⣠⣄ ⢸⣿⡄  ⠙⣿⣆  ⢀⣀⡀ ⢸⣿⣷   ⣿⣿⠁⢀⣿⢿⣇
+⠈⠛⠉ ⢸⣿⡇   ⢹⣿⢀⣾⠟⠛⣿⡆⢸⣿⢿⣧  ⣿⣿ ⣸⡟⢘⣿⣄⣀
+ ⢠⣦ ⢸⣿⡇   ⣾⡿⠸⣿⣴⡾⠟⠁⢸⣿ ⢻⣧⡀⣿⡇⢀⣿⠛⠛⢿⣟⠁
+    ⢸⣿⡇⣀⣤⣾⡿⠁ ⠻⢷⣤⣶⠾⢸⣿⡄ ⠻⣿⣿⡇⢸⣿  ⢸⣿⡀
+  ⠐⣿⣿⣿⣿⡿⠟⠉        ⠈⢿⠇  ⠙⠿⠁⠸⠿   ⠻⠃
+   ⠈⠉⠉
+---
+{bold}What's a Promise?{/bold}
+&&&
+Most of you probably already know what promises are, but on the off-chance
+you don't, let's do a a really quick intro to get everyone on the same page.
+---
+"A {bold}promise{/bold} represents the eventual
+ result of an asynchronous operation."
+
+    -- Promises/A+
+&&&
+Basically it's a placeholder object for an async function's eventual return
+value or error.
+---
+ ┌─────────┐          ┌──────────┐
+ │ Pending ├────┬────>│ Resolved │
+ └─────────┘    │     └──────────┘
+                │
+                │     ┌──────────┐
+                └────>│ Rejected │
+                      └──────────┘
+&&&
+The most important thing about them is that they can have 3 different states.
+---
+{yellow}{inverse}      {/inverse}{/yellow}
+{yellow}{inverse}      {/inverse}{/yellow}
+{yellow}{inverse}  then{/inverse}{/yellow}
+&&&
+The second most important thing about them is that they have a method called
+`then`, which is where all the magic happens.
+---
+{code:javascript}
+getSomethingAsync().then(
+  function(result){ // onFullfilled
+    console.log('woohoo, result!', result);
+  },
+  function(err){ // onRejected
+    console.error('oh noez!', err.stack);
+  }
+);
+{/code}
+&&&
+`then` takes 2 arguments, both are functions.
+
+The first takes in the fulfilled value of the promise, kind of like the second 
+argument of callbacks in node.
+
+The second takes in an error object, kind of like the first argument of
+callbacks in node.
+
+Only one of these two functions gets executed. All promises either fullfill or
+reject, not both.
+---
+{code:javascript}
+getSomethingAsync()
+.then(JSON.parse)
+.then(function(parsed){
+  console.log('woohoo, result!', parsed);
+})
+.catch(function(err){
+  console.error('oh noez!', err.stack);
+});
+
+
+
+{/code}
+&&&
+We also have this alternative syntax, which makes it much more clear which
+function is which. The rejection function is always optional on then, and
+`catch` is equivalent to calling `then` with only the second argument.
+
+---
+{code:javascript}
+getSomethingAsync()
+.then(JSON.parse)
+.then(function(parsed){
+  return parsed.value + 1;
+})
+.then(function(result){
+  console.log('woohoo, result!', result);
+})
+.catch(function(err){
+  console.error('oh noez!', err.stack);
+});
+{/code}
+&&&
+`then` also returns a promise, so we can chain them like this. The promise
+returned by then will fullfill with the value returned by it (or if you return
+a promise, whatever that fullfills to).
+
+If you throw an error inside `then`, the promise returned by it will reject.
+A rejection is caught by the first `catch` or rejection callback that comes
+after it in a promise chain.
+
+The coolest thing here, I think, is that throwing inside a `then` function is
+equivalent to making a promise that rejects, so we can mix rejecting promises
+and synchronously thrown errors all over the chain, and they're still treated
+the same.
+---
+{bold}Let's use promises!{/bold}
+&&&
+Great! So now hopefully by this point you're convinced that Promises are awesome
+and you want to use them for your project. Unfortunately, if you're like me, you
+have a mountain of really ancient code to deal with, and compatibility issues.
+
+It turns out it's not necessarily straightforward to convert things over to
+support promises.
+
+Let's start from the bottom. Somewhere, we're going to have to use a function
+that returns a promise. Unfortunately, no node builtins and very few modules on
+NPM actually support promises.
+---
+{bold}Who makes a promise?{/bold}
+&&&
+So what do you do?
+
+You could start wrapping existing APIs with the promise constructor, but you may
+have noticed I didn't yet mention how to use the promise constructor. That's
+because in most cases you'll never have to use it. Thanks to...
+
+---
+      Bluebird!{blue}
+                      .--.
+                    ."  o \__
+                 _.-"    ,(  `
+             _.-"      ,;;|
+        _.-=" _,"    ,,;;;'
+    .-"`_.-"``-..,,;;;;:'
+    `"'`          `\`\
+                   /^\\\{/blue}
+&&&
+Bluebird is an implementation of promises written by a mad scientist named
+Petka. It also has a bunch of nice helper functions in it to get you going with
+promises.
+---
+{code:javascript}
+var Promise = require('bluebird');
+var fs = Promise.promisifyAll(require('fs'));
+
+fs.readFileAsync('stuff.json')
+.then(JSON.parse)
+.then(function(stuff){
+  console.log(stuff.thing);
+});
+{/code}
+&&&
+This is one of the most important features of bluebird. It wraps an existing
+module (or really jsut any object) and gives it back with promisified versions
+of all its methods. It tosses the suffix `Async` on there to tell them apart
+from the originals.
+
+Notice that in this example I've put JSON.parse directly into `then`. This works
+because JSON takes in one argument and returns something, so that gets passed
+down the chain.
+---
+{bold}What about Backward Compatibility?{/bold}
+&&&
+So when you're adapting your code to use promises, you're probably going to want
+to be backward compatible, at least for some amount of time. It turns out
+Bluebird actually makes this really easy for some simple cases.
+---
+{bold}Promise.prototype.nodeify{/bold}
+
+---
+(... safelyPromisify ...)
+---
+{bold}wean off async.js{/bold}
+---
+(... parallel ...)
+---
+(... series ...)
+---
+(... etc ...)
+---
+{bold}Thrush!{/bold}
+(... ANSI/ASCII logo ...)
+---
+(... go through the methods, etc. ...)
+---
+The End
+&&&
+Notes from yusuke: 
+* es6/7
+* domains

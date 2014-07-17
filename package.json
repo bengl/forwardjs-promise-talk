@@ -1,0 +1,26 @@
+{
+  "name": "forwardjs-promise-talk",
+  "version": "0.0.0",
+  "description": "Talk on Promises and Backward Compatibility for ForwardJS",
+  "bin": "./forwardjs-promise-talk",
+  "scripts": {
+    "test": "./forwardjs-promise-talk"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:bengl/forwardjs-promise-talk.git"
+  },
+  "keywords": [
+    "promises",
+    "presentation"
+  ],
+  "author": "Bryan English <bryan@bryanenglish.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bengl/forwardjs-promise-talk/issues"
+  },
+  "homepage": "https://github.com/bengl/forwardjs-promise-talk",
+  "dependencies": {
+    "presentate": "^0.1.1"
+  }
+}

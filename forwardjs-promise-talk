@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+
+var opts = {};
+
+var split = require('fs')
+            .readFileSync(
+              require('path')
+              .resolve(__dirname, 'promises.presentate')
+            ).toString('utf8')
+            .split(/\n===\n/);
+
+var data = JSON.parse(split[0]);
+data.slides = split[1];
+
+require('presentate')(data, process.stdin, process.stdout);
