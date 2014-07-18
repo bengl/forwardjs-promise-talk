@@ -352,7 +352,7 @@ In that case, since the promise is returned before the callback is called
 first. It's important here to note that once a promise has gone into a resolved
 or rejected state, the the resolve and reject functions become no-ops, so
 everything is fine.
---
+---
 {code:javascript}
 function myNotFunFunc(hook, cb){
   // ...
@@ -434,7 +434,7 @@ obj.doSomething1()
 The promise example is simpler again. Chaining your then functions is pretty
 equivalent to doing an async.waterfall, so this one is pretty much a no-brainer.
 ---
-{code}
+{code:javascript}
 async.waterfall(
   arrayOfFunctions
 , cb);
