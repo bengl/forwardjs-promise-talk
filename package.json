@@ -21,6 +21,6 @@
   },
   "homepage": "https://github.com/bengl/forwardjs-promise-talk",
   "dependencies": {
-    "presentate": "^0.1.1"
+    "presentate": "^0.1.2"
   }
 }
