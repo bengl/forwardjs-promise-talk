@@ -1,25 +1,43 @@
 {"top":0, "left":0, "center": "auto", "notes": 12345, "sizing_slide": true}
 ===
-I "Promise" to be Backward Compatible
----
 {bold}Hello!{/bold}
+&&&
+Hi everybody and welcome to ForwardJS.
 ---
-{bold}Who's this?{/bold}
----
-Bryan English
+{bold}Bryan English
 
 @bengl
 
-http://bryanenglish.com
+https://bryanenglish.com{/bold}
+&&&
+My name is Bryan English and you can find me online everywhere with this
+username, or at my website which is pretty easy to find.
 ---
-   ⣀⣀⣀⣀⣀                 ⣠⡄
-   ⠛⣿⣿⠛⠿⣿⣦⣄       ⢰⣷⡀   ⢸⣿⡇ ⢰⣷⡀
- ⣠⣄ ⢸⣿⡄  ⠙⣿⣆  ⢀⣀⡀ ⢸⣿⣷   ⣿⣿⠁⢀⣿⢿⣇
-⠈⠛⠉ ⢸⣿⡇   ⢹⣿⢀⣾⠟⠛⣿⡆⢸⣿⢿⣧  ⣿⣿ ⣸⡟⢘⣿⣄⣀
- ⢠⣦ ⢸⣿⡇   ⣾⡿⠸⣿⣴⡾⠟⠁⢸⣿ ⢻⣧⡀⣿⡇⢀⣿⠛⠛⢿⣟⠁
-    ⢸⣿⡇⣀⣤⣾⡿⠁ ⠻⢷⣤⣶⠾⢸⣿⡄ ⠻⣿⣿⡇⢸⣿  ⢸⣿⡀
-  ⠐⣿⣿⣿⣿⡿⠟⠉        ⠈⢿⠇  ⠙⠿⠁⠸⠿   ⠻⠃
-   ⠈⠉⠉
+{bold}   ⣀⣀⣀⣀⣀                 ⣠⡄        {/bold}
+{bold}   ⠛⣿⣿⠛⠿⣿⣦⣄       ⢰⣷⡀   ⢸⣿⡇ ⢰⣷⡀    {/bold}
+{bold} ⣠⣄ ⢸⣿⡄  ⠙⣿⣆  ⢀⣀⡀ ⢸⣿⣷   ⣿⣿⠁⢀⣿⢿⣇    {/bold}
+{bold}⠈⠛⠉ ⢸⣿⡇   ⢹⣿⢀⣾⠟⠛⣿⡆⢸⣿⢿⣧  ⣿⣿ ⣸⡟⢘⣿⣄⣀  {/bold}
+{bold} ⢠⣦ ⢸⣿⡇   ⣾⡿⠸⣿⣴⡾⠟⠁⢸⣿ ⢻⣧⡀⣿⡇⢀⣿⠛⠛⢿⣟⠁  {/bold}
+{bold}    ⢸⣿⡇⣀⣤⣾⡿⠁ ⠻⢷⣤⣶⠾⢸⣿⡄ ⠻⣿⣿⡇⢸⣿  ⢸⣿⡀  {/bold}
+{bold}  ⠐⣿⣿⣿⣿⡿⠟⠉        ⠈⢿⠇  ⠙⠿⠁⠸⠿   ⠻⠃  {/bold}
+{bold}   ⠈⠉⠉                             {/bold}
+&&&
+I work at DeNA which is a big Japanese mobile gaming company with offices here
+in San Francisco. All of our game servers use Node.js, and I'm the lead eningeer
+for our common server tech team.
+
+Of course, we're hiring like crazy so if any of the stuff I talk about today is
+interesting to you, find me after this and let's talk.
+---
+{bold}I "Promise" to be Backward Compatible{/bold}
+&&&
+I'm here today to talk about converting existing APIs over to using promises
+both internally and externally, which is a process we've been going through at
+DeNA for the past few months.
+
+I realize I probably have the only talk at ForwardJS with backward in the title,
+but I think it's reasonable, since in many cases backward compatibility is the
+responsible way of moving forward.
 ---
 {bold}What's a Promise?{/bold}
 &&&
@@ -28,28 +46,40 @@ you don't, let's do a a really quick intro to get everyone on the same page.
 ---
 "A {bold}promise{/bold} represents the eventual
  result of an asynchronous operation."
-
     -- Promises/A+
+
+"A {bold}Promise{/bold} is an object that is used as a placeholder
+ for the eventual results of a deferred (and possibly
+ asynchronous) computation."
+    -- ES6 Draft
 &&&
 Basically it's a placeholder object for an async function's eventual return
 value or error.
 ---
- ┌─────────┐          ┌──────────┐
- │ Pending ├────┬────>│ Resolved │
- └─────────┘    │     └──────────┘
-                │
-                │     ┌──────────┐
-                └────>│ Rejected │
-                      └──────────┘
+ ┌───────────┐          ┌───────────┐
+ │ Pending   ├────┬────>│ Fulfilled │
+ └───────────┘    │     └───────────┘
+                  │
+                  │     ┌───────────┐
+                  └────>│ Rejected  │
+                        └───────────┘
 &&&
-The most important thing about them is that they can have 3 different states.
+The most important thing about them is that they can have 3 different states:
+Pending, fulfilled or rejected.
+
+Once a promise moves from the pending state into one of the other two states,
+that's it's final state. It can't move from there.
+
+Fulfilled promises can have a value associated with them, which you can think of
+as a return value. Rejected promises have an associated value called a reason,
+which in any reasonably good code is an instance of the builtin Error class.
 ---
 {yellow}{inverse}      {/inverse}{/yellow}
 {yellow}{inverse}      {/inverse}{/yellow}
 {yellow}{inverse}  then{/inverse}{/yellow}
 &&&
 The second most important thing about them is that they have a method called
-`then`, which is where all the magic happens.
+`then`, which is where a lot of the magic happens.
 ---
 {code:javascript}
 getSomethingAsync().then(
@@ -62,7 +92,10 @@ getSomethingAsync().then(
 );
 {/code}
 &&&
-`then` takes 2 arguments, both are functions.
+`then` takes 2 arguments and both are functions.
+
+In this example, we're assuming that `getSomethingAsync()` is a function that
+returns a promise.
 
 The first takes in the fulfilled value of the promise, kind of like the second 
 argument of callbacks in node.
@@ -75,26 +108,21 @@ reject, not both.
 ---
 {code:javascript}
 getSomethingAsync()
-.then(JSON.parse)
-.then(function(parsed){
-  console.log('woohoo, result!', parsed);
+.then(function(result){
+  console.log('woohoo, result!', result);
 })
 .catch(function(err){
   console.error('oh noez!', err.stack);
 });
 
-
-
 {/code}
 &&&
 We also have this alternative syntax, which makes it much more clear which
-function is which. The rejection function is always optional on then, and
+function is which. Both functions are always optional on then, and
 `catch` is equivalent to calling `then` with only the second argument.
-
 ---
 {code:javascript}
 getSomethingAsync()
-.then(JSON.parse)
 .then(function(parsed){
   return parsed.value + 1;
 })
@@ -122,8 +150,10 @@ the same.
 {bold}Let's use promises!{/bold}
 &&&
 Great! So now hopefully by this point you're convinced that Promises are awesome
-and you want to use them for your project. Unfortunately, if you're like me, you
-have a mountain of really ancient code to deal with, and compatibility issues.
+and you want to use them for your project.
+
+Unfortunately, if you're like me, you have a mountain of really ancient code to
+deal with.
 
 It turns out it's not necessarily straightforward to convert things over to
 support promises.
@@ -132,14 +162,13 @@ Let's start from the bottom. Somewhere, we're going to have to use a function
 that returns a promise. Unfortunately, no node builtins and very few modules on
 NPM actually support promises.
 ---
-{bold}Who makes a promise?{/bold}
+{bold}Where do promises come from?{/bold}
 &&&
 So what do you do?
 
 You could start wrapping existing APIs with the promise constructor, but you may
 have noticed I didn't yet mention how to use the promise constructor. That's
 because in most cases you'll never have to use it. Thanks to...
-
 ---
       Bluebird!{blue}
                       .--.
@@ -152,24 +181,55 @@ because in most cases you'll never have to use it. Thanks to...
                    /^\\\{/blue}
 &&&
 Bluebird is an implementation of promises written by a mad scientist named
-Petka. It also has a bunch of nice helper functions in it to get you going with
-promises.
+Petka Antonov. It also has a bunch of nice helper functions in it to get you
+going with promises.
+
+Because Promises are in ES6 now, some environments are starting to support
+Promises natively, so eventually we might not have to use libraries like
+Bluebird, but for now, Bluebird is by far the fastest implementation of promises
+and provides enough extra goodies that we decided to run with it at DeNA, and
+we've been pretty happy with it.
+---
+$ npm install --save bluebird{/pause}
+{code:javascript}
+var Promise = require('bluebird');
+{/code}
+&&&
+To use bluebird, just npm install it ... and then require it as Promise like
+this.
 ---
 {code:javascript}
 var Promise = require('bluebird');
-var fs = Promise.promisifyAll(require('fs'));
+var fs = require('readFile');
+var readFile = Promise.promisify(require('fs'));
 
-fs.readFileAsync('stuff.json')
+readFile('stuff.json', {encoding: 'utf8'})
 .then(JSON.parse)
 .then(function(stuff){
   console.log(stuff.thing);
 });
 {/code}
 &&&
-This is one of the most important features of bluebird. It wraps an existing
-module (or really jsut any object) and gives it back with promisified versions
+This is one of the most important features of bluebird. `Promisify` wraps a
+function up so that instead of taking in a callback as the last parameter, you
+can omit the last parameter and it will return a promise instead.
+---
+{code:javascript}
+var Promise = require('bluebird');
+var fs = Promise.promisifyAll(require('fs'));
+
+
+fs.readFileAsync('stuff.json', {encoding: 'utf8'})
+.then(JSON.parse)
+.then(function(stuff){
+  console.log(stuff.thing);
+});
+{/code}
+&&&
+We can also use `promisifyAll` on the `fs` object instead. It wraps an existing
+module (or really just any object) and gives it back with promisified versions
 of all its methods. It tosses the suffix `Async` on there to tell them apart
-from the originals.
+from the original methods, which are still included.
 
 Notice that in this example I've put JSON.parse directly into `then`. This works
 because JSON takes in one argument and returns something, so that gets passed
@@ -178,8 +238,9 @@ down the chain.
 {bold}What about Backward Compatibility?{/bold}
 &&&
 So when you're adapting your code to use promises, you're probably going to want
-to be backward compatible, at least for some amount of time. It turns out
-Bluebird actually makes this really easy for some simple cases.
+to be backward compatible, at least for some amount of time depending on your
+release schedule. It turns out Bluebird actually makes this really easy for
+simple cases.
 ---
 {bold}Promise.prototype.nodeify{/bold}
 &&&
@@ -188,14 +249,14 @@ pretty great for building APIs that support both promises and node's typical
 continuation-passing style.
 
 What nodeify will do is check if the value passed in is a function. If it is,
-it'll call the function based on whether it resolves or rejects. In a
-resolution case, it'll call the function with te second parameter being the
-resolved value. In the rejection case, the rejection reason, which should be
+it'll call the function based on whether it fulfills or rejects. In a
+fulfillment case, it'll call the function with te second parameter being the
+fulfilled value. In the rejection case, the rejection reason, which should be
 an error object, will be passed in as the first parameter.
 ---
 {code:javascript}
 function myFunc(someArg, cb){
-  return doSomething(someArg, function(err, data){
+  doSomething(someArg, function(err, data){
     if (err) return cb(err);
     doSomethingElse(data, cb);
   });
@@ -214,6 +275,10 @@ function myFunc(someArg){
 {/code}
 &&&
 And now you converted it to return a promise.
+
+Here we're assuming that doSomething and doSomethingElse are from some external
+library that we've called `promisifyAll` on, so we get these Async-suffixed
+versions.
 ---
 {code:javascript}
 function myFunc(someArg, cb){
@@ -226,6 +291,9 @@ function myFunc(someArg, cb){
 &&&
 Now you can add nodeify at the end of the returned promise so that the original
 callback style is still supported. Yay for backward compatibility!
+
+So again if the callback is omitted, this functions exactly the same as if you
+didn't put the nodeify call at the end.
 ---
 Too Simple!
 &&&
@@ -289,19 +357,19 @@ function myNotFunFunc(hook, cb){
 {/code}
 &&&
 You could start by using Bluebird's promisify function, but that only works if
-you know for sure that the hook will only be a callback. Once again this isn't
+you know for sure that the hook will call a callback. Once again this isn't
 good enough.
 
-But we're close.
+But we're really close.
 ---
 {code:javascript}
 function promisify(func, context){
   return function(){
     var args = [].slice.call(arguments);
-    return new Promise(function(resolve, reject){
+    return new Promise(function(fulfill, reject){
       args.push(function(err, result){
         if (err) reject(err);
-        else resolve(result);
+        else fulfill(result);
       });
       func.apply(context, args);
     });
@@ -312,46 +380,58 @@ function promisify(func, context){
 &&&
 Let's look at a simplified version of the promisify function.
 
+One interesting thing here is that we're using the Promise constructor, which
+takes in a function that gets fullfill and reject functions passed to it, so you
+can do whatever async operations you want inside as long as you eventually call
+fulfill or reject. I haven't shown you this constructor until now because most
+of the time you don't need it. Bluebird and other libraries make it easy enough
+to wrap existing async APIs without having to bother with this constructor, but
+for this case, we need it.
+
 Basically, return a function that passes its arguments to the original function,
-but wrapped up inside a promise. We add callback to the arguments that resolves
+but wrapped up inside a promise. We add callback to the arguments that fulfills
 or rejects the promise. Then we go ahead and call it.
 
 So what we really want is something that will either promisify or just pass
-through if the function does return a promise. 
+through if the function does return a promise.
 ---
 {code:javascript}
 function maybePromisify(func, context){
   return function(){
     var args = [].slice.call(arguments);
-    return new Promise(function(resolve, reject){
+    return new Promise(function(fulfill, reject){
       args.push(function(err, result){
         if (err) reject(err);
-        else resolve(result);
+        else fulfill(result);
       });
       var p = func.apply(context, args);
-      if (p && p.then) { resolve(p); }
+      if (p && p.then) { fulfill(p); }
     });
   };
 }
 {/code}
 &&&
 This is really easy. All we do is check the value returned by the function. If
-it quacks like a promise, then we go ahead and resolve it, so the top-level
+it quacks like a promise, then we go ahead and fulfill it, so the top-level
 promise here will assume the fullfilled state of the promise 'p'.
 
-So basically, we pass on the resolution to the returned promise if there is one,
-and if not, the callback should end up being called, doing its job to call
-resolve or reject.
+So basically, we pass on the fulfilled value to the returned promise if there is
+one, and if not, the callback should end up being called, doing its job to call
+fulfill or reject.
 
 So one interesting thing that we ran into with this approach is what happens
 when you pass in an already nodeified function. That is, one that calls a
 callback if available and returns a promise.
 
 In that case, since the promise is returned before the callback is called
-(assuming a truly async function), the second resolve call in this code happens
-first. It's important here to note that once a promise has gone into a resolved
-or rejected state, the the resolve and reject functions become no-ops, so
+(assuming a truly async function), the second fulfill call in this code happens
+first. It's important here to note that once a promise has gone into a fulfilled
+or rejected state, the the fulfill and reject functions become no-ops, so
 everything is fine.
+
+So this is obviously a rather optimistic version of this. For one thing, it
+assumes that if the returned object has a property `then` on it, then it's a
+promise.
 ---
 {code:javascript}
 function myNotFunFunc(hook, cb){
@@ -391,6 +471,9 @@ async.parallel([
 &&&
 Here's your typical async.parallel example.
 
+We're assuming that doSomething 1 and 2 are functions that take callbacks and do
+something asynchronously and independently.
+
 If your functions don't require any context, that's great, and you could just
 pass them directly into async.parallel, but often that isn't the case, so you
 end up wrapping these guys in functions like this.
@@ -404,10 +487,14 @@ Promise.all([
 &&&
 The promise version of this is much simpler. Most promise libraries provide the
 all function, which takes in an array of promises and returns a promise that
-resolves if and when all of the promises in the array have resolved, and with a
-value that's an array of the resolved values.
+fulfills if and when all of the promises in the array have fulfilled, and with a
+value that's an array of the fulfilled values.
 
 If any of these promises reject, the returned promise rejects with that reason.
+
+The great thing here is that we're passing in promises, not functions.
+That means we don't have to do any shenanigans like wrapping them up in
+functions to preserve context, which is great!
 ---
 {code:javascript}
 async.waterfall([
@@ -435,9 +522,7 @@ The promise example is simpler again. Chaining your then functions is pretty
 equivalent to doing an async.waterfall, so this one is pretty much a no-brainer.
 ---
 {code:javascript}
-async.waterfall(
-  arrayOfFunctions
-, cb);
+async.waterfall(arrayOfFunctions, cb);
 {/code}
 &&&
 Sometimes you have some dynamically generated array of functions, so you can't
@@ -453,7 +538,24 @@ arrayOfFunctions.reduce(function(previous, current){
 &&&
 In reasonable and newer JS environments, arrays have a reduce function so this
 works. We're basically just building up the then chain, starting it off with
-a resolved promise.
+a fulfilled promise.
+
+Promise.resolve() returns a fulfilled promise, which we need to start off the
+chain if we don't assume that the first function in the chain returns a promise.
+---
+{code:javascript}
+Promise.resolve()
+.then(arrayOfFunctions[0])
+.then(arrayOfFunctions[1])
+.then(arrayOfFunctions[2])
+// ...
+{/code}
+&&&
+So what we're effectively building is a chain that looks something like this,
+where we keep passing the next function in the array to then. This turns out to
+be useful when building things that resemble, for example, express's middleware
+chain, where not-yet determined number of asynchronous functions are called in
+series.
 ---
 {code:javascript}
 var count = 0;
@@ -470,7 +572,12 @@ async.whilst(
 {/code}
 &&&
 async.whilst is pretty useful when you want an async loop that stops under some
-condition. It would of course be great to have a promise version of this.
+condition.
+
+In this example i'm making sure that the asynchronous function `doSomething`
+runs exactly 5 times, waiting for completion before starting the next iteration.
+
+It would of course be great to have a promise version of this.
 ---
 {code:javascript}
 function whilst(condition, action) {
@@ -501,10 +608,15 @@ whilst(
 );
 {/code}
 &&&
-Here's our new whilst function in action.
+Here's our new whilst function in action. It ends up looking a lot like the
+async.js version, but with no callbacks.
 
-We found ourselves doing a lot of these sorts of tasks over and over again, so
-we put togther a library of them.
+
+
+
+
+At DeNA we found ourselves doing a lot of these sorts of tasks over and over
+again, so we put togther a library of them.
 ---
       Thrush!{red}
                       .--.
@@ -521,15 +633,116 @@ family, so we thought this would be a good name.
 ---
 http://github.com/DeNA/thrush{pause}
 
-$ npm install thrush
+$ npm install --save thrush
 {pause}
 {code:javascript}
 var Promise = require('thrush');
 {/code}
+&&&
+You can find this module on our github org .. and you can npm install it ...
+and you can use it just like you would use bluebird. It's actually an extension
+of bluebird, so all of bluebird's methods are available on it.
 ---
-* Promise.safelyPromisify{pause}
-* Promise.series{pause}
-* Promise.whilst
+{pause}Promise.safelyPromisify{pause}
+
+Promise.series{pause}
+
+Promise.whilst
+&&&
+We've added a few methods ...
+The first is safelyPromisify, which is basically the maybePromisify function I
+showed you earlier, with some extra logic around domains that we needed ...
+Then we've got series, which is just a thin wrapper around reduce, like I showed
+you before. ...
+We've also got whilst, which I just showed you, and a few other small helper
+functions to make things easier for us to convert APIs from async.js-heavy code
+to Promise-heavy code.
+---
+{bold}More Edge Cases{/bold}
+&&&
+Depending on how you designed your API to begin with, you might run into some
+snags when converting your code to promises.
+
+For us, a lot of these came from the fact that with promises, you can only pass
+one fulfilled value, and either that or a rejection reason, but not both.
+---
+{code:javascript}
+function getThings(cb) {
+  doDomething1(function(err, result1){
+    if (err) return cb(err);
+    doSomething2(function(err, result2){
+      if (err) return cb(err);
+      cb(null, result1, result2);
+    });
+  });
+}
+{/code}
+&&&
+Here we have a case where the callback is called with 2 different result objects.
+This is something that can happen in all kinds of places for all kinds of
+reasons, and is actually in some popular libraries on NPM as well.
+
+So what do you do to convert such a thing?
+
+If we try to run promisify on this function, what it will actually do is pass
+both results as an array, so it only counts as one value. This is the kind of
+behavior we decided was best to emulate, because it meant we could use other
+Bluebird functions later on.
+---
+{code:javascript}
+function getThings() {
+  var result1;
+  return doDomething1Async()
+  .then(function(_result1){
+    result1 = _result1;
+    return doSomething2Async();
+  })
+  .then(function(result2){
+    return [result1, result2];
+  });
+}
+{/code}
+&&&
+And here's what this might look like. Notice I've brought result1 into a higher
+scope so that we have access to it in the last then-block. We could have also
+passed it in the fulfilled value for the previous then-block.
+---
+{code:javascript}
+getThings().then(function(results){
+  console.log(results[0], "result1");
+  console.log(results[1], "result2");
+});
+{/code}
+&&&
+Now when we call getThings, it will fulfill with an array with both results.
+---
+{code:javascript}
+getThings().spread(function(result1, result2){
+  console.log(result1, "result1");
+  console.log(result2, "result2");
+});
+{/code}
+&&&
+We also have the spread function which is the same as then, except the values in
+the array are used as parameters for the function.
+---
+{code:javascript}
+function getThings(cb) {
+  var result1;
+  return doDomething1Async()
+  .then(function(_result1){
+    result1 = _result1;
+    return doSomething2Async();
+  })
+  .then(function(result2){
+    return [result1, result2];
+  }).nodeify(cb, {spread: true});
+}
+{/code}
+&&&
+Coming back to backward compatibility... When we add nodeify here, we can pass
+in an argument letting it know that the node callback should be called with the
+elements of the fulfilled value as function arguments.
 ---
 The End
 ---
@@ -539,7 +752,6 @@ $ npm install -g forwardjs-promise-talk
 $ forwardjs-promise-talk
 &&&
 Notes from yusuke:
-* es6/7
 * domains
 Notes from bryan:
 * something about how big an undertaking it is
