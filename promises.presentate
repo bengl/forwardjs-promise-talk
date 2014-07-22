@@ -35,6 +35,16 @@ I'm here today to talk about converting existing APIs over to using promises
 both internally and externally, which is a process we've been going through at
 DeNA for the past few months.
 
+Our team builds a set of common game server code that game teams can use
+as kind of a RAD tool for servers. Originally, all of our asynchronous API
+functions would call callbacks, like you'd expect. But we started experimenting
+with promises and fell in love with the API style, so we embarked on a process
+to convert everything over.
+
+We wanted the consumers of our API, who are all internal teams, to be able to
+be able to convert at their own pace after we'd finished our work, so backward
+compatibility was a pretty high concern.
+
 I realize I probably have the only talk at ForwardJS with backward in the title,
 but I think it's reasonable, since in many cases backward compatibility is the
 responsible way of moving forward.
@@ -44,11 +54,11 @@ responsible way of moving forward.
 Most of you probably already know what promises are, but on the off-chance
 you don't, let's do a a really quick intro to get everyone on the same page.
 ---
-"A {bold}promise{/bold} represents the eventual result of an
+"A {bold}{yellow}promise{/yellow}{/bold} represents the eventual result of an
  asynchronous operation."
     -- Promises/A+
 
-"A {bold}Promise{/bold} is an object that is used as a placeholder
+"A {bold}{yellow}Promise{/yellow}{/bold} is an object that is used as a placeholder
  for the eventual results of a deferred (and possibly
  asynchronous) computation."
     -- ES6 Draft
@@ -81,7 +91,8 @@ The second most important thing about them is that they have a method called
 `then`, which is where a lot of the magic happens.
 ---
 {code:javascript}
-getSomethingAsync().then(
+getSomethingAsync() // returns a promise
+.then(
   function(result){ // onFullfilled
     console.log('woohoo, result!', result);
   },
@@ -309,7 +320,7 @@ The examples I've shown so far are pretty simple. In the real world, all kinds
 of things happen that are a bit more complex.
 ---
 {code:javascript}
-function myNotFunFunc(hook, cb){
+function myNotFunFunc(hook, cb){  
   // ...
   hook(function(){
     // ...
@@ -322,12 +333,12 @@ For example, you might have a function in your API that takes in some kind of
 async hook function that runs in some part of the process of completing.
 ---
 {code:javascript}
-function myNotFunFunc(hook){
+function myNotFunFunc(hook){      
   // ...
-  return hook().then(function(){
+  return hook()
+  .then(function(){
     // ...
   });
-
 }
 {/code}
 &&&
@@ -335,12 +346,12 @@ When converting your code an API to use promises, it would be nice to be able to
 just call the hook as if it returns a promise.
 ---
 {code:javascript}
-function myNotFunFunc(hook, cb){
+function myNotFunFunc(hook, cb){  
   // ...
-  return hook().then(function(){
+  return hook()
+  .then(function(){
     // ...
   }).nodeify(cb);
-
 }
 {/code}
 &&&
@@ -753,7 +764,97 @@ Coming back to backward compatibility... When we add nodeify here, we can pass
 in an argument letting it know that the node callback should be called with the
 elements of the fulfilled value as function arguments.
 ---
-The End
+{bold}Stack Traces{/bold}
+&&&
+As anyone who write a lot of node.js code knows, stack traces usually end a
+little earlier than we'd like, basically whenever the execution was started
+by some libuv event.
+---
+{code:javascript}
+doSomethingAsync()
+.then( /* ... */ )
+.then( /* ... */ )
+.then(function(){
+  throw new Error('bad');
+})
+.catch(function(err){
+  console.error(err.stack);
+});
+{/code}
+---
+Error: bad
+    at test.js:5:9
+    at tryCatch1 (in Bluebird)
+    at Promise$_callHandler (in Bluebird)
+    at Promise$_settlePromiseFromHandler (in Bluebird)
+    at Promise$_settlePromiseAt (in Bluebird)
+    at Promise$_settlePromises (in Bluebird)
+    at Async$_consumeFunctionBuffer (in Bluebird)
+    at Async$consumeFunctionBuffer (in Bluebird)
+    at process._tickCallback (node.js:415:13)
+    at Function.Module.runMain (module.js:499:11)
+---
+Error: bad
+    at test.js:5:9
+    at Function.Module.runMain (module.js:499:11)
+From previous event:
+    at Object.<anonymous> (test.js:1:81)
+    at Module._compile (module.js:456:26)
+    at Object.Module._extensions..js (module.js:474:10)
+    at Module.load (module.js:356:32)
+    at Function.Module._load (module.js:312:12)
+    at Function.Module.runMain (module.js:497:10)
+    at startup (node.js:119:16)
+    at node.js:902:3
+---
+BLUEBIRD_DEBUG=1{pause}
+{code:javascript}
+Promise.longStackTraces();
+{/code}
+---
+{bold}Mocha{/bold}
+&&&
+Double your tests
+---
+{code:javascript}
+it('does something', function(done){
+  return doSomething()
+  .then(function(value){
+    assert.ok(value);
+  }).nodeify(done);
+});
+{/code}
+&&&
+< v1.18.0
+---
+{code:javascript}
+it('does something', function(){    
+  return doSomething()
+  .then(function(value){
+    assert.ok(value);
+  });
+});
+{/code}
+&&&
+v1.18.0
+---
+{bold}Is it all of this worth it?{/bold}
+&&&
+Obviously this kind of conversion is going to take time, and it definitely did.
+It took us several months while working on other things to get this done.
+
+The best way we can measure the success of this sort of thing is to see how
+happy our API consumers are.
+
+Luckily, the people actually using our APIs seem much happier using Promises.
+They feel like they're writing less boilerplate, and having seen some of the
+benchmarks, they're pretty excited about potential performance improvements over
+our previous implementations.
+
+They're also happy that we've maintained backward compatibility thus far, so
+that they can convert their own code at their own pace.
+---
+{bold}The End{/bold}
 ---
 http://github.com/bengl/forwardjs-promise-talk{pause}
 
@@ -762,6 +863,3 @@ $ forwardjs-promise-talk
 &&&
 Notes from yusuke:
 * domains
-Notes from bryan:
-* something about how big an undertaking it is
-* some kind of better conclusion
