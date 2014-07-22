@@ -44,8 +44,8 @@ responsible way of moving forward.
 Most of you probably already know what promises are, but on the off-chance
 you don't, let's do a a really quick intro to get everyone on the same page.
 ---
-"A {bold}promise{/bold} represents the eventual
- result of an asynchronous operation."
+"A {bold}promise{/bold} represents the eventual result of an
+ asynchronous operation."
     -- Promises/A+
 
 "A {bold}Promise{/bold} is an object that is used as a placeholder
@@ -53,8 +53,7 @@ you don't, let's do a a really quick intro to get everyone on the same page.
  asynchronous) computation."
     -- ES6 Draft
 &&&
-Basically it's a placeholder object for an async function's eventual return
-value or error.
+That pretty much says it. These guys say it better than I will.
 ---
  ┌───────────┐          ┌───────────┐
  │ Pending   ├────┬────>│ Fulfilled │
@@ -123,8 +122,8 @@ function is which. Both functions are always optional on then, and
 ---
 {code:javascript}
 getSomethingAsync()
-.then(function(parsed){
-  return parsed.value + 1;
+.then(function(value){
+  return value + 1;
 })
 .then(function(result){
   console.log('woohoo, result!', result);
@@ -135,17 +134,26 @@ getSomethingAsync()
 {/code}
 &&&
 `then` also returns a promise, so we can chain them like this. The promise
-returned by then will fullfill with the value returned by it (or if you return
-a promise, whatever that fullfills to).
+returned by then will fullfill with the value returned by it ...
+---
+{code:javascript}
+getSomethingAsync()
+.then(function(value){
+  return getSomethingElseAsync();
+})
+.then(function(result){
+  console.log('woohoo, result!', result);
+})
+.catch(function(err){
+  console.error('oh noez!', err.stack);
+});
+{/code}
+&&&
+or if you return a promise, whatever that fulfills to.
 
 If you throw an error inside `then`, the promise returned by it will reject.
 A rejection is caught by the first `catch` or rejection callback that comes
 after it in a promise chain.
-
-The coolest thing here, I think, is that throwing inside a `then` function is
-equivalent to making a promise that rejects, so we can mix rejecting promises
-and synchronously thrown errors all over the chain, and they're still treated
-the same.
 ---
 {bold}Let's use promises!{/bold}
 &&&
@@ -190,7 +198,7 @@ Bluebird, but for now, Bluebird is by far the fastest implementation of promises
 and provides enough extra goodies that we decided to run with it at DeNA, and
 we've been pretty happy with it.
 ---
-$ npm install --save bluebird{/pause}
+$ npm install --save bluebird{pause}
 {code:javascript}
 var Promise = require('bluebird');
 {/code}
@@ -200,8 +208,8 @@ this.
 ---
 {code:javascript}
 var Promise = require('bluebird');
-var fs = require('readFile');
-var readFile = Promise.promisify(require('fs'));
+var fs = require('fs');
+var readFile = Promise.promisify(fs.readFile);    
 
 readFile('stuff.json', {encoding: 'utf8'})
 .then(JSON.parse)
@@ -298,7 +306,7 @@ didn't put the nodeify call at the end.
 Too Simple!
 &&&
 The examples I've shown so far are pretty simple. In the real world, all kinds
-of crazy things happen.
+of things happen that are a bit more complex.
 ---
 {code:javascript}
 function myNotFunFunc(hook, cb){
@@ -528,10 +536,11 @@ async.waterfall(arrayOfFunctions, cb);
 Sometimes you have some dynamically generated array of functions, so you can't
 just throw together a bunch of thens.
 
-It turns out the solution isn't that hard.
+It turns out the promise version of this isn't that hard.
 ---
 {code:javascript}
-arrayOfFunctions.reduce(function(previous, current){
+arrayOfFunctions
+.reduce(function(previous, current){
   return previous.then(current);
 }, Promise.resolve());
 {/code}
@@ -649,7 +658,7 @@ Promise.series{pause}
 
 Promise.whilst
 &&&
-We've added a few methods ...
+We've added a few methods on top of bluebird ...
 The first is safelyPromisify, which is basically the maybePromisify function I
 showed you earlier, with some extra logic around domains that we needed ...
 Then we've got series, which is just a thin wrapper around reduce, like I showed
