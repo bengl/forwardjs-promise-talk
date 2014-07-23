@@ -6,12 +6,10 @@ Hi everybody and welcome to ForwardJS.
 ---
 {bold}Bryan English
 
-@bengl
-
-https://bryanenglish.com{/bold}
+@bengl{/bold}
 &&&
 My name is Bryan English and you can find me online everywhere with this
-username, or at my website which is pretty easy to find.
+username.
 ---
 {bold}   ⣀⣀⣀⣀⣀                 ⣠⡄        {/bold}
 {bold}   ⠛⣿⣿⠛⠿⣿⣦⣄       ⢰⣷⡀   ⢸⣿⡇ ⢰⣷⡀    {/bold}
