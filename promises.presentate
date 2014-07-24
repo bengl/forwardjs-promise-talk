@@ -4,9 +4,11 @@
 &&&
 Hi everybody and welcome to ForwardJS.
 ---
-{bold}Bryan English
-
-@bengl{/bold}
+{bold}
+Bryan English      O/
+                  /|
+@bengl            / \
+{/bold}
 &&&
 My name is Bryan English and you can find me online everywhere with this
 username.
@@ -28,6 +30,9 @@ Of course, we're hiring like crazy so if any of the stuff I talk about today is
 interesting to you, find me after this and let's talk.
 ---
 {bold}I "Promise" to be Backward Compatible{/bold}
+
+
+
 &&&
 I'm here today to talk about converting existing APIs over to using promises
 both internally and externally, which is a process we've been going through at
@@ -46,10 +51,13 @@ compatibility was a pretty high concern.
 I realize I probably have the only talk at ForwardJS with backward in the title,
 but I think it's reasonable, since in many cases backward compatibility is the
 responsible way of moving forward.
+
+All the stuff I'll show you is from a node.js perspective. If your main JS
+environment is the browser, the browserify is your friend.
 ---
 {bold}What's a Promise?{/bold}
 &&&
-Most of you probably already know what promises are, but on the off-chance
+A lot of you probably already know what promises are, but on the off-chance
 you don't, let's do a a really quick intro to get everyone on the same page.
 ---
 "A {bold}{yellow}promise{/yellow}{/bold} represents the eventual result of an
@@ -80,6 +88,9 @@ that's it's final state. It can't move from there.
 Fulfilled promises can have a value associated with them, which you can think of
 as a return value. Rejected promises have an associated value called a reason,
 which in any reasonably good code is an instance of the builtin Error class.
+
+Some frameworks and documentation will refer to fulfilled as resolved. Whatever
+floats your boat, really.
 ---
 {yellow}{inverse}      {/inverse}{/yellow}
 {yellow}{inverse}      {/inverse}{/yellow}
@@ -99,7 +110,7 @@ getSomethingAsync() // returns a promise
   }
 );
 {/code}
-&&&
+&&&q\
 `then` takes 2 arguments and both are functions.
 
 In this example, we're assuming that `getSomethingAsync()` is a function that
@@ -187,7 +198,7 @@ You could start wrapping existing APIs with the promise constructor, but you may
 have noticed I didn't yet mention how to use the promise constructor. That's
 because in most cases you'll never have to use it. Thanks to...
 ---
-      Bluebird!{blue}
+      Bluebird!{bold}{blue}
                       .--.
                     ."  o \__
                  _.-"    ,(  `
@@ -195,7 +206,7 @@ because in most cases you'll never have to use it. Thanks to...
         _.-=" _,"    ,,;;;'
     .-"`_.-"``-..,,;;;;:'
     `"'`          `\`\
-                   /^\\\{/blue}
+                   /^\\\{/blue}{/bold}
 &&&
 Bluebird is an implementation of promises written by a mad scientist named
 Petka Antonov. It also has a bunch of nice helper functions in it to get you
@@ -233,8 +244,8 @@ can omit the last parameter and it will return a promise instead.
 ---
 {code:javascript}
 var Promise = require('bluebird');
-var fs = Promise.promisifyAll(require('fs'));
-
+var fs = require('fs');
+Promise.promsifyAll(fs);
 
 fs.readFileAsync('stuff.json', {encoding: 'utf8'})
 .then(JSON.parse)
@@ -251,6 +262,9 @@ from the original methods, which are still included.
 Notice that in this example I've put JSON.parse directly into `then`. This works
 because JSON takes in one argument and returns something, so that gets passed
 down the chain.
+
+It's a bit of a performance hit to do promisify or promisifyAll, so whenever
+you can, you should do them during startup or initialization time.
 ---
 {bold}What about Backward Compatibility?{/bold}
 &&&
@@ -258,18 +272,6 @@ So when you're adapting your code to use promises, you're probably going to want
 to be backward compatible, at least for some amount of time depending on your
 release schedule. It turns out Bluebird actually makes this really easy for
 simple cases.
----
-{bold}Promise.prototype.nodeify{/bold}
-&&&
-Bluebird and some other libraries provide a method called `nodeify` that's
-pretty great for building APIs that support both promises and node's typical
-continuation-passing style.
-
-What nodeify will do is check if the value passed in is a function. If it is,
-it'll call the function based on whether it fulfills or rejects. In a
-fulfillment case, it'll call the function with te second parameter being the
-fulfilled value. In the rejection case, the rejection reason, which should be
-an error object, will be passed in as the first parameter.
 ---
 {code:javascript}
 function myFunc(someArg, cb){
@@ -307,7 +309,19 @@ function myFunc(someArg, cb){
 {/code}
 &&&
 Now you can add nodeify at the end of the returned promise so that the original
-callback style is still supported. Yay for backward compatibility!
+callback style is still supported.
+
+Bluebird and some other libraries provide a method called `nodeify` that's
+pretty great for building APIs that support both promises and node's typical
+continuation-passing style.
+
+What nodeify will do is check if the value passed in is a function. If it is,
+it'll call the function based on whether it fulfills or rejects. In a
+fulfillment case, it'll call the function with te second parameter being the
+fulfilled value. In the rejection case, the rejection reason, which should be
+an error object, will be passed in as the first parameter.
+
+Yay for backward compatibility!
 
 So again if the callback is omitted, this functions exactly the same as if you
 didn't put the nodeify call at the end.
@@ -413,7 +427,7 @@ So what we really want is something that will either promisify or just pass
 through if the function does return a promise.
 ---
 {code:javascript}
-function maybePromisify(func, context){
+function safelyPromisify(func, context){
   return function(){
     var args = [].slice.call(arguments);
     return new Promise(function(fulfill, reject){
@@ -453,7 +467,7 @@ promise.
 {code:javascript}
 function myNotFunFunc(hook, cb){
   // ...
-  return maybePromisify(hook)()
+  return safelyPromisify(hook)()
   .then(function(){
     // ...
   }).nodeify(cb);
@@ -462,7 +476,7 @@ function myNotFunFunc(hook, cb){
 &&&
 So let's look at that in our original example.
 
-I've replaced the call to bluebird's promisify with our `maybePromisify`, and
+I've replaced the call to bluebird's promisify with our `safelyPromisify`, and
 that's all it takes. Now this function can either take a callback or return a
 promise, and the hook function can also do the same.
 ---
@@ -668,7 +682,7 @@ Promise.series{pause}
 Promise.whilst
 &&&
 We've added a few methods on top of bluebird ...
-The first is safelyPromisify, which is basically the maybePromisify function I
+The first is safelyPromisify, which is basically the safelyPromisify function I
 showed you earlier, with some extra logic around domains that we needed ...
 Then we've got series, which is just a thin wrapper around reduce, like I showed
 you before. ...
@@ -805,16 +819,17 @@ From previous event:
     at startup (node.js:119:16)
     at node.js:902:3
 ---
-BLUEBIRD_DEBUG=1{pause}
+$ BLUEBIRD_DEBUG=1 node app.js{pause}
 {code:javascript}
 Promise.longStackTraces();
 {/code}
 ---
-{bold}Mocha{/bold}
+{bold}Testing{/bold}
 &&&
 Double your tests
 ---
 {code:javascript}
+// mocha < v1.18.0
 it('does something', function(done){
   return doSomething()
   .then(function(value){
@@ -822,10 +837,9 @@ it('does something', function(done){
   }).nodeify(done);
 });
 {/code}
-&&&
-< v1.18.0
 ---
 {code:javascript}
+// mocha >= v1.18.0
 it('does something', function(){    
   return doSomething()
   .then(function(value){
@@ -833,8 +847,6 @@ it('does something', function(){
   });
 });
 {/code}
-&&&
-v1.18.0
 ---
 {bold}Is it all of this worth it?{/bold}
 &&&
