@@ -1,6 +1,6 @@
 {
   "name": "forwardjs-promise-talk",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Talk on Promises and Backward Compatibility for ForwardJS",
   "bin": "./forwardjs-promise-talk",
   "scripts": {
