@@ -30,9 +30,13 @@ Of course, we're hiring like crazy so if any of the stuff I talk about today is
 interesting to you, find me after this and let's talk.
 ---
 {bold}I "Promise" to be Backward Compatible{/bold}
-
-
-
+{red}
+                /|  /|
+               / | / |
+              /  |/  |
+              \  |\  |
+               \ | \ |
+                \|  \|   {/red}
 &&&
 I'm here today to talk about converting existing APIs over to using promises
 both internally and externally, which is a process we've been going through at
@@ -100,7 +104,7 @@ The second most important thing about them is that they have a method called
 `then`, which is where a lot of the magic happens.
 ---
 {code:javascript}
-getSomethingAsync() // returns a promise
+getResultPromise() // returns a promise
 .then(
   function(result){ // onFullfilled
     console.log('woohoo, result!', result);
@@ -110,10 +114,10 @@ getSomethingAsync() // returns a promise
   }
 );
 {/code}
-&&&q\
+&&&
 `then` takes 2 arguments and both are functions.
 
-In this example, we're assuming that `getSomethingAsync()` is a function that
+In this example, we're assuming that `getResultPromise()` is a function that
 returns a promise.
 
 The first takes in the fulfilled value of the promise, kind of like the second 
@@ -126,7 +130,7 @@ Only one of these two functions gets executed. All promises either fullfill or
 reject, not both.
 ---
 {code:javascript}
-getSomethingAsync()
+getResultPromise()
 .then(function(result){
   console.log('woohoo, result!', result);
 })
@@ -141,7 +145,7 @@ function is which. Both functions are always optional on then, and
 `catch` is equivalent to calling `then` with only the second argument.
 ---
 {code:javascript}
-getSomethingAsync()
+getResultPromise()
 .then(function(value){
   return value + 1;
 })
@@ -157,9 +161,9 @@ getSomethingAsync()
 returned by then will fullfill with the value returned by it ...
 ---
 {code:javascript}
-getSomethingAsync()
-.then(function(value){
-  return getSomethingElseAsync();
+getResultPromise()
+.then(function(){
+  return getAnotherResultPromise();
 })
 .then(function(result){
   console.log('woohoo, result!', result);
@@ -190,6 +194,14 @@ Let's start from the bottom. Somewhere, we're going to have to use a function
 that returns a promise. Unfortunately, no node builtins and very few modules on
 NPM actually support promises.
 ---
+                (((       ,,
+                ( *)======/\====
+                 )(      /  \
+      __________/  )    /    \
+      \___         /   (------)
+        \____    _/    (      )
+             \__/      (______)
+
 {bold}Where do promises come from?{/bold}
 &&&
 So what do you do?
@@ -218,7 +230,7 @@ Bluebird, but for now, Bluebird is by far the fastest implementation of promises
 and provides enough extra goodies that we decided to run with it at DeNA, and
 we've been pretty happy with it.
 ---
-$ npm install --save bluebird{pause}
+$ npm i --save bluebird{pause}
 {code:javascript}
 var Promise = require('bluebird');
 {/code}
@@ -267,6 +279,13 @@ It's a bit of a performance hit to do promisify or promisifyAll, so whenever
 you can, you should do them during startup or initialization time.
 ---
 {bold}What about Backward Compatibility?{/bold}
+{red}
+                /|  /|
+               / | / |
+              /  |/  |
+              \  |\  |
+               \ | \ |
+                \|  \|   {/red}
 &&&
 So when you're adapting your code to use promises, you're probably going to want
 to be backward compatible, at least for some amount of time depending on your
@@ -274,10 +293,10 @@ release schedule. It turns out Bluebird actually makes this really easy for
 simple cases.
 ---
 {code:javascript}
-function myFunc(someArg, cb){
-  doSomething(someArg, function(err, data){
+function getUser(someArg, cb){
+  getFromDB(someArg, function(err, data){
     if (err) return cb(err);
-    doSomethingElse(data, cb);
+    getFromOtherDB(data, cb);
   });
 }
 {/code}
@@ -285,25 +304,25 @@ function myFunc(someArg, cb){
 So let's say you had an existing API which looked something like this.
 ---
 {code:javascript}
-function myFunc(someArg){
-  return doSomethingAsync(someArg)
+function getUser(someArg){
+  return getFromDBAsync(someArg)
   .then(function(data){
-    return doSomethingElseAsync(data);
+    return getFromOtherDBAsync(data);    
   });
 }
 {/code}
 &&&
 And now you converted it to return a promise.
 
-Here we're assuming that doSomething and doSomethingElse are from some external
+Here we're assuming that getFromDB and getFromOtherDB are from some external
 library that we've called `promisifyAll` on, so we get these Async-suffixed
 versions.
 ---
 {code:javascript}
-function myFunc(someArg, cb){
-  return doSomethingAsync(someArg)
+function getUser(someArg, cb){
+  return getFromDBAsync(someArg)
   .then(function(data){
-    return doSomethingElseAsync(data);
+    return getFromOtherDBAsync(data);    
   }).nodeify(cb);
 }
 {/code}
@@ -332,7 +351,7 @@ The examples I've shown so far are pretty simple. In the real world, all kinds
 of things happen that are a bit more complex.
 ---
 {code:javascript}
-function myNotFunFunc(hook, cb){  
+function getUser(hook, cb){  
   // ...
   hook(function(){
     // ...
@@ -345,7 +364,7 @@ For example, you might have a function in your API that takes in some kind of
 async hook function that runs in some part of the process of completing.
 ---
 {code:javascript}
-function myNotFunFunc(hook){      
+function getUser(hook){           
   // ...
   return hook()
   .then(function(){
@@ -358,7 +377,7 @@ When converting your code an API to use promises, it would be nice to be able to
 just call the hook as if it returns a promise.
 ---
 {code:javascript}
-function myNotFunFunc(hook, cb){  
+function getUser(hook, cb){       
   // ...
   return hook()
   .then(function(){
@@ -378,7 +397,7 @@ this.
 So how do we solve this?
 ---
 {code:javascript}
-function myNotFunFunc(hook, cb){
+function getUser(hook, cb){
   // ...
   return Promise.promisify(hook)()
   .then(function(){
@@ -465,7 +484,7 @@ assumes that if the returned object has a property `then` on it, then it's a
 promise.
 ---
 {code:javascript}
-function myNotFunFunc(hook, cb){
+function getUser(hook, cb){
   // ...
   return safelyPromisify(hook)()
   .then(function(){
@@ -480,6 +499,11 @@ I've replaced the call to bluebird's promisify with our `safelyPromisify`, and
 that's all it takes. Now this function can either take a callback or return a
 promise, and the hook function can also do the same.
 ---
+{red}
+     /|        |\
+    / |        | \
+    |  \      /  |
+     \  |    |  /    {/red}
 {bold}Callback Hell Avoidance{/bold}
 &&&
 Before we moved over to promises, most of our code took advantage of the hugely
@@ -511,8 +535,8 @@ end up wrapping these guys in functions like this.
 ---
 {code:javascript}
 Promise.all([
-  obj.doSomething1(),
-  obj.doSomething2()
+  obj.doSomething1Async(),
+  obj.doSomething2Async()
 ]);
 {/code}
 &&&
@@ -543,9 +567,9 @@ pretty much the same thing, except without 'someValue'. We're assuming that
 'doSomething1' is going to call 'next' with 'someValue' in the second parameter.
 ---
 {code:javascript}
-obj.doSomething1()
+obj.doSomething1Async()
 .then(function(someValue){
-    return obj.doSomething2(someValue);
+    return obj.doSomething2Async(someValue);
 });
 {/code}
 &&&
@@ -635,7 +659,7 @@ whilst(
   },
   function(){
     count++;
-    return doSomething();
+    return doSomethingAsync();
   }
 );
 {/code}
@@ -665,7 +689,7 @@ family, so we thought this would be a good name.
 ---
 http://github.com/DeNA/thrush{pause}
 
-$ npm install --save thrush
+$ npm i --save thrush
 {pause}
 {code:javascript}
 var Promise = require('thrush');
@@ -690,7 +714,12 @@ We've also got whilst, which I just showed you, and a few other small helper
 functions to make things easier for us to convert APIs from async.js-heavy code
 to Promise-heavy code.
 ---
-{bold}More Edge Cases{/bold}
+{bold}
+                ______     _ O
+                      |   __/ \
+More Edge Cases       |    /
+                      |
+{/bold}
 &&&
 Depending on how you designed your API to begin with, you might run into some
 snags when converting your code to promises.
@@ -864,12 +893,15 @@ our previous implementations.
 They're also happy that we've maintained backward compatibility thus far, so
 that they can convert their own code at their own pace.
 ---
-{bold}The End{/bold}
+{bold}
+ _____ _   _ _____   _____ _   _ ____
+|_   _| | | | ____| | ____| \ | |  _ \
+  | | | |_| |  _|   |  _| |  \| | | | |
+  | | |  _  | |___  | |___| |\  | |_| |
+  |_| |_| |_|_____| |_____|_| \_|____/
+{/bold}
 ---
 http://github.com/bengl/forwardjs-promise-talk{pause}
 
-$ npm install -g forwardjs-promise-talk
+$ npm i -g forwardjs-promise-talk
 $ forwardjs-promise-talk
-&&&
-Notes from yusuke:
-* domains

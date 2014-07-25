@@ -12,7 +12,8 @@
   },
   "keywords": [
     "promises",
-    "presentation"
+    "presentation",
+    "forwardjs"
   ],
   "author": "Bryan English <bryan@bryanenglish.com>",
   "license": "ISC",
